@@ -196,7 +196,6 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
 
     # For reasons unknown to me, the data being fed into here is not the same as the data coming out of compute_group (which I think it should be)
     # I have to put some hacky hacks here to make things work...
-    print(data)
     data$xmin <- min(data$xmin)
     data$xmax <- max(data$xmax)
     data <- check_linewidth(data, snake_class(self))

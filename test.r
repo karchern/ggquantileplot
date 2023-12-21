@@ -297,7 +297,6 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
     data <- flip_data(data, flipped_aes)
 
     data <- data[dim(data)[1]:1, ]
-    browser()
     if ("fill" %in% colnames(data)) {
         data$fill <- map_chr(rev_scale(1:length(data$fill)), \(n) {
             return(colorspace::lighten(data$fill[1], amount = n, method = "relative"))
@@ -373,7 +372,6 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
     # } else {
     #   outliers_grob <- NULL
     # }
-    #browser()
     ggname("geom_quantileplot", grobTree(
         GeomCrossbar$draw_panel(
             box,
@@ -400,4 +398,6 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
 
 ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len)) +
     geom_quantileplot(aes(fill = as.factor(supp))) +
-    scale_fill_manual(values = c('OJ' = "#163300", "VC" = "#4d1601"))
+    geom_point(aes(color = as.factor(supp), group = supp), position = position_jitterdodge()) +
+    scale_fill_manual(values = c("OJ" = "#163300", "VC" = "#4d1601")) +
+    scale_color_manual(values = c('OJ' = "#163300", "VC" = "#4d1601"))

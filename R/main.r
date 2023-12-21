@@ -16,6 +16,7 @@ geom_quantileplot <- function(mapping = NULL, data = NULL,
                          outlier.size = 1.5,
                          outlier.stroke = 0.5,
                          outlier.alpha = NULL,
+                         quantilesP = c(0.5, 0.6, 0.7, 0.8, 0.9, 1),
                          notch = FALSE,
                          notchwidth = 0.5,
                          varwidth = FALSE,
@@ -56,12 +57,13 @@ geom_quantileplot <- function(mapping = NULL, data = NULL,
       varwidth = varwidth,
       na.rm = na.rm,
       orientation = orientation,
+      quantilesP = quantilesP,
       ...
     )
   )
 }
 
-
+#' @export
 StatQuantileplot <- ggproto("StatBoxplot", Stat,
   required_aes = c("y|x"),
   non_missing_aes = "weight",
@@ -104,11 +106,12 @@ StatQuantileplot <- ggproto("StatBoxplot", Stat,
     params
   },
 
-  extra_params = c("na.rm", "orientation"),
+  extra_params = c("na.rm", "orientation", 'quantilesP'),
 
-  compute_group = function(data, scales, width = NULL, na.rm = FALSE, coef = 1.5, flipped_aes = FALSE) {
+  compute_group = function(data, scales, width = NULL, na.rm = FALSE, coef = 1.5, flipped_aes = FALSE, quantilesP = quantilesP) {
     data <- flip_data(data, flipped_aes)
-    qs <- c(0.5, 0.6, 0.7, 0.8, 0.9, 1)
+    #qs <- c(0.5, 0.6, 0.7, 0.8, 0.9, 1)
+    qs <- quantilesP
 
     r <- map(qs, \(x) {
         qqLow <- as.numeric(stats::quantile(data$y, 1 - x))
@@ -146,6 +149,7 @@ StatQuantileplot <- ggproto("StatBoxplot", Stat,
   }
 )
 
+#' @export
 GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
 
   # need to declare `width` here in case this geom is used with a stat that
@@ -192,6 +196,7 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
 
     # For reasons unknown to me, the data being fed into here is not the same as the data coming out of compute_group (which I think it should be)
     # I have to put some hacky hacks here to make things work...
+    print(data)
     data$xmin <- min(data$xmin)
     data$xmax <- max(data$xmax)
     data <- check_linewidth(data, snake_class(self))

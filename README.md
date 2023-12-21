@@ -18,13 +18,18 @@ library(grid)
 library(ggplot2)
 library(ggquantileplot)
 
-pQuantileplot <- ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len)) +
+ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len)) +
     geom_quantileplot(aes(fill = as.factor(supp)), quantilesP = c(0.5, 0.7, 0.9, 1)) +
     scale_fill_manual(values = c("OJ" = "red", "VC" = "blue")) +
     scale_color_manual(values = c("OJ" = "red", "VC" = "blue")) +
     theme_classic()
 ```
 
-One reads a quantile plot in that the most central, darkest block is the most central quantile (in this case 30%-70%, see argument quantilesP)
+One reads a quantile plot in that the most central, darkest block is the most central quantile (in this case 40%-60%, see argument quantilesP)
 
 ![Image](figure/test.png "test")
+
+The information contained in this case is probably not higher than for a boxplot, but in case of zero-inflated data, quantile plots provide a space-efficient and succinct visual means to
+analysing the distribution.
+
+![Image](figure/testZI.png "test")

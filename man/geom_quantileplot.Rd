@@ -17,6 +17,7 @@ geom_quantileplot(
   outlier.size = 1.5,
   outlier.stroke = 0.5,
   outlier.alpha = NULL,
+  quantilesP = c(0.5, 0.6, 0.7, 0.8, 0.9, 1),
   notch = FALSE,
   notchwidth = 0.5,
   varwidth = FALSE,

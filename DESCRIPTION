@@ -1,12 +1,16 @@
 Package: ggquantileplot
-Title: What the Package Does (One Line, Title Case)
+Title: Plot quantile plots using ggplot2
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    person("Nicolai", "Karcher", , "karchernic@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-7894-8182"))
+Description: Quantile plots are an alternative to box plots / histograms / violinplots as in that they visualize the distribution of data points.  I often found myself wanting a more 'robust' alternative to box plots when working with zero-inflated data (often found in -omics data). For very sparse data, boxplots are useless as the median (and often times even upper quartile) is equal to 0/detection limit, so all the user can see is are the outliers, which is not helpful in judging the distribution. Quantile plots are a useful alternative since they show the cutoffs of a range of quantiles.
+License: use_mit_license()
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
+Imports:
+    ggplot2,
+    rlang,
+    vctrs
+

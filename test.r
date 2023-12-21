@@ -5,11 +5,62 @@ library(ggplot2)
 library(rlang)
 library(ggforce)
 library(vctrs)
+library(colorspace)
+
+rev_scale <- function(x) {
+    return((max(x) - x) / (max(x) - min(x)))
+}
+
+show_stack <- function() {
+  cat("#----- Stack containing call to show_stack -----#\n\n")
+  x <- sys.calls()
+  lapply(head(x, -1), function(x) {print(x); cat("\n")})
+  cat("#-----------------------------------------------#\n\n")
+}
 
 # Some more coded that needed to be copied manually. I don't know why these functions are not exposed and I'm not even sure where they come from
 ggname <- function(prefix, grob) {
   grob$name <- grid::grobName(grob, prefix)
   grob
+}
+
+NO_GROUP <- -1L
+
+# Ensure that the data frame contains a grouping variable.
+#
+# If the `group` variable is not present, then a new group
+# variable is generated from the interaction of all discrete (factor or
+# character) vectors, excluding `label`. The special value `NO_GROUP`
+# is used for all observations if no discrete variables exist.
+add_group <- function(data) {
+  if (empty(data)) return(data)
+
+  if (is.null(data[["group"]])) {
+    disc <- vapply(data, is.discrete, logical(1))
+    disc[names(disc) %in% c("label", "PANEL")] <- FALSE
+
+    if (any(disc)) {
+      data$group <- id(data[disc], drop = TRUE)
+    } else {
+      data$group <- NO_GROUP
+      attr(data$group, "n") <- 1L
+    }
+  } else {
+    data$group <- id(data["group"], drop = TRUE)
+  }
+
+  data
+}
+
+# Is a grouping available?
+# (Will return TRUE if an explicit group or a discrete variable with only one
+# level existed when add_group() was called.)
+has_groups <- function(data) {
+  # If no group aesthetic is specified, all values of the group column equal to
+  # NO_GROUP. On the other hand, if a group aesthetic is specified, all values
+  # are different from NO_GROUP (since they are a result of plyr::id()). NA is
+  # returned for 0-row data frames.
+  data$group[1L] != NO_GROUP
 }
 
 # From ggplot2/R/utilities.r
@@ -137,22 +188,28 @@ StatQuantileplot <- ggproto("StatBoxplot", Stat,
 
   compute_group = function(data, scales, width = NULL, na.rm = FALSE, coef = 1.5, flipped_aes = FALSE) {
     data <- flip_data(data, flipped_aes)
-    qs <- c(0, 0.25, 0.5, 0.75, 1)
+    qs <- c(0.5, 0.6, 0.7, 0.8, 0.9, 1)
 
-    # for (q in qs){
-    #     qqLow <- as.numeric(stats::quantile(data$y, 1-qs))
-    #     qqUp <- as.numeric(stats::quantile(data$y, qs))
-    # }
+    r <- map(qs, \(x) {
+        qqLow <- as.numeric(stats::quantile(data$y, 1 - x))
+        qqUp <- as.numeric(stats::quantile(data$y, x))
+        median <- stats::median(data$y)
+        return(c(qqLow, qqUp, median))
+    })
 
+    r <- do.call(rbind.data.frame, r)
+    colnames(r) <- c("lower", "upper", 'middle')
+    r$quantileGroup <- str_c(qs, 1 - qs, sep = ":")
+    
+    
 
 
     # if (!is.null(data$weight)) {
     #     mod <- quantreg::rq(y ~ 1, weights = weight, data = data, tau = qs)
     #     stats <- as.numeric(stats::coef(mod))
     # } else {
-    stats <- as.numeric(stats::quantile(data$y, qs))
-    #browser()
-    names(stats) <- c("ymin", "lower", "middle", "upper", "ymax")
+    #stats <- as.numeric(stats::quantile(data$y, qs))
+    #names(stats) <- c("ymin", "lower", "middle", "upper", "ymax")
     #iqr <- diff(stats[c(2, 4)])
 
     # outliers <- data$y < (stats[2] - coef * iqr) | data$y > (stats[4] + coef * iqr)
@@ -163,7 +220,8 @@ StatQuantileplot <- ggproto("StatBoxplot", Stat,
     if (vec_unique_count(data$x) > 1)
       width <- diff(range(data$x)) * 0.9
 
-    df <- data_frame0(!!!as.list(stats))
+    #df <- data_frame0(!!!as.list(stats))
+    df <- r
     #df$outliers <- list(data$y[outliers])
 
     if (is.null(data$weight)) {
@@ -203,7 +261,8 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
     data$flipped_aes <- params$flipped_aes
     data <- flip_data(data, params$flipped_aes)
     data$width <- data$width %||%
-      params$width %||% (resolution(data$x, FALSE) * 0.9)
+        params$width %||% (resolution(data$x, FALSE) * 0.9)
+    
 
     if (!is.null(data$outliers)) {
       suppressWarnings({
@@ -214,21 +273,14 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
       data$ymin_final  <- pmin(out_min, data$ymin)
       data$ymax_final  <- pmax(out_max, data$ymax)
     }
-
+    
     # if `varwidth` not requested or not available, don't use it
-    if (is.null(params) || is.null(params$varwidth) || !params$varwidth || is.null(data$relvarwidth)) {
-      data$xmin <- data$x - data$width / 2
-      data$xmax <- data$x + data$width / 2
-    } else {
-      # make `relvarwidth` relative to the size of the largest group
-      data$relvarwidth <- data$relvarwidth / max(data$relvarwidth)
-      data$xmin <- data$x - data$relvarwidth * data$width / 2
-      data$xmax <- data$x + data$relvarwidth * data$width / 2
-    }
+    data$xmin <- data$x - data$width / 2
+    data$xmax <- data$x + data$width / 2
     data$width <- NULL
     if (!is.null(data$relvarwidth)) data$relvarwidth <- NULL
-
     flip_data(data, params$flipped_aes)
+    
   },
 
   draw_group = function(self, data, panel_params, coord, lineend = "butt",
@@ -237,16 +289,37 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
                         outlier.size = 1.5, outlier.stroke = 0.5,
                         outlier.alpha = NULL, notch = FALSE, notchwidth = 0.5,
                         varwidth = FALSE, flipped_aes = FALSE) {
-    
+    # For reasons unknown to me, the data being fed into here is not the same as the data coming out of compute_group (which I think it should be)
+    # I have to put some hacky hacks here to make things work...
+    data$xmin <- min(data$xmin)
+    data$xmax <- max(data$xmax)
     data <- check_linewidth(data, snake_class(self))
     data <- flip_data(data, flipped_aes)
+
+    data <- data[dim(data)[1]:1, ]
+    browser()
+    if ("fill" %in% colnames(data)) {
+        data$fill <- map_chr(rev_scale(1:length(data$fill)), \(n) {
+            return(colorspace::lighten(data$fill[1], amount = n, method = "relative"))
+        })
+    }    
+
+    
+    
     # this may occur when using geom_quantileplot(stat = "identity")
-    if (nrow(data) != 1) {
-      cli::cli_abort(c(
-        "Can only draw one boxplot per group",
-        "i"= "Did you forget {.code aes(group = ...)}?"
-      ))
-    }
+    # if (nrow(data) != 1) {
+    #     cli::cli_abort(c(
+    #         "Can only draw one boxplot per group",
+    #         "i" = "Did you forget {.code aes(group = ...)}?"
+    #     ))
+    # }
+
+    if (nrow(data) <= 1) {
+        cli::cli_abort(c(
+            "Make sure to supply more than one quantile"
+        ))
+    }    
+    
 
     common <- list(
       colour = data$colour,
@@ -300,19 +373,17 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
     # } else {
     #   outliers_grob <- NULL
     # }
-    browser()
+    #browser()
     ggname("geom_quantileplot", grobTree(
-      #outliers_grob,
-      #GeomSegment$draw_panel(whiskers, panel_params, coord, lineend = lineend),
-      GeomCrossbar$draw_panel(
-        box,
-        fatten = 2,
-        panel_params,
-        coord,
-        lineend = lineend,
-        linejoin = linejoin,
-        flipped_aes = flipped_aes
-      )
+        GeomCrossbar$draw_panel(
+            box,
+            fatten = 2,
+            panel_params,
+            coord,
+            lineend = lineend,
+            linejoin = linejoin,
+            flipped_aes = flipped_aes
+        )
     ))
   },
 
@@ -321,10 +392,12 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
   default_aes = aes(weight = 1, colour = "grey20", fill = "white", size = NULL,
     alpha = NA, shape = 19, linetype = "solid", linewidth = 0.5),
 
-  required_aes = c("x|y", "lower|xlower", "upper|xupper", "middle|xmiddle", "ymin|xmin", "ymax|xmax"),
+  #required_aes = c("x|y", "lower|xlower", "upper|xupper", "middle|xmiddle", "ymin|xmin", "ymax|xmax"),
+  required_aes = c("x|y", "lower|xlower", "upper|xupper", "middle|xmiddle", 'fill'),
 
   rename_size = TRUE
 )
 
-ggplot(data = mtcars, aes(x = "bla", y = mpg)) +
-    geom_quantileplot(aes(fill = as.factor(cyl)))
+ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len)) +
+    geom_quantileplot(aes(fill = as.factor(supp))) +
+    scale_fill_manual(values = c('OJ' = "#163300", "VC" = "#4d1601"))

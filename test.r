@@ -139,6 +139,13 @@ StatQuantileplot <- ggproto("StatBoxplot", Stat,
     data <- flip_data(data, flipped_aes)
     qs <- c(0, 0.25, 0.5, 0.75, 1)
 
+    # for (q in qs){
+    #     qqLow <- as.numeric(stats::quantile(data$y, 1-qs))
+    #     qqUp <- as.numeric(stats::quantile(data$y, qs))
+    # }
+
+
+
     # if (!is.null(data$weight)) {
     #     mod <- quantreg::rq(y ~ 1, weights = weight, data = data, tau = qs)
     #     stats <- as.numeric(stats::coef(mod))
@@ -146,18 +153,18 @@ StatQuantileplot <- ggproto("StatBoxplot", Stat,
     stats <- as.numeric(stats::quantile(data$y, qs))
     #browser()
     names(stats) <- c("ymin", "lower", "middle", "upper", "ymax")
-    iqr <- diff(stats[c(2, 4)])
+    #iqr <- diff(stats[c(2, 4)])
 
-    outliers <- data$y < (stats[2] - coef * iqr) | data$y > (stats[4] + coef * iqr)
-    if (any(outliers)) {
-      stats[c(1, 5)] <- range(c(stats[2:4], data$y[!outliers]), na.rm = TRUE)
-    }
+    # outliers <- data$y < (stats[2] - coef * iqr) | data$y > (stats[4] + coef * iqr)
+    # if (any(outliers)) {
+    #   stats[c(1, 5)] <- range(c(stats[2:4], data$y[!outliers]), na.rm = TRUE)
+    # }
 
     if (vec_unique_count(data$x) > 1)
       width <- diff(range(data$x)) * 0.9
 
     df <- data_frame0(!!!as.list(stats))
-    df$outliers <- list(data$y[outliers])
+    #df$outliers <- list(data$y[outliers])
 
     if (is.null(data$weight)) {
       n <- sum(!is.na(data$y))
@@ -166,8 +173,8 @@ StatQuantileplot <- ggproto("StatBoxplot", Stat,
       n <- sum(data$weight[!is.na(data$y) & !is.na(data$weight)])
     }
 
-    df$notchupper <- df$middle + 1.58 * iqr / sqrt(n)
-    df$notchlower <- df$middle - 1.58 * iqr / sqrt(n)
+    # df$notchupper <- df$middle + 1.58 * iqr / sqrt(n)
+    # df$notchlower <- df$middle - 1.58 * iqr / sqrt(n)
 
     df$x <- if (is.factor(data$x)) data$x[1] else mean(range(data$x))
     df$width <- width

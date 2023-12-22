@@ -1,3 +1,39 @@
+draw_key_quantileplot <- function (data, params, size) 
+{
+    print(data)
+    print(params)
+    print(size)
+    #asdadsasd
+    # TEMPORARY
+    data$alpha <- 0.3
+    gp <- gpar(col = data$colour %||% "grey20", fill = alpha(data$fill %||% 
+        "white", data$alpha), lwd = (data$linewidth %||% 0.5) * 
+        .pt, lty = data$linetype %||% 1, lineend = params$lineend %||% 
+        "butt", linejoin = params$linejoin %||% "mitre")
+    if (isTRUE(params$flipped_aes)) {
+        grobTree(linesGrob(c(0.1, 0.25), 0.5), linesGrob(c(0.75, 
+            0.9), 0.5), rectGrob(width = 0.5, height = 0.75), 
+            linesGrob(0.5, c(0.125, 0.875)), gp = gp)
+    }
+    else {
+
+    topY <- 3
+    bottomY <- -3
+    yRange <- abs(topY - bottomY)
+    totalLegendElements <- params$numGroups * params$quantilesP
+
+    
+
+    do.call('grobTree',             list(
+            rectGrob(height = 0.5, width = 0.75, x = 0, y = 1.5),
+            rectGrob(height = 0.5, width = 0.75, x = 0, y = 1),
+            rectGrob(height = 0.5, width = 0.75, x = 0, y = 0.5),
+            rectGrob(height = 0.5, width = 0.75, x = 0, y = 0),
+            "gp" = gp
+        ))        
+    }
+}
+
 #' Plot a quantile plot
 #'
 #'  Quantile plots are an alternative to box plots / histograms / violinplots as in that they visualize the distribution of data points.
@@ -252,7 +288,7 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
     ))
   },
 
-  draw_key = draw_key_boxplot,
+  draw_key = draw_key_crossbar,
 
   default_aes = aes(weight = 1, colour = "grey20", fill = "white", size = NULL,
     alpha = NA, shape = 19, linetype = "solid", linewidth = 0.5),

@@ -34,6 +34,21 @@ draw_key_quantileplot <- function (data, params, size)
     }
 }
 
+draw_key_quantileplot2 <- function (data, params, size) 
+{
+    gp <- gpar(col = data$colour %||% "grey20", fill = alpha(data$fill %||% 
+        "white", data$alpha), lwd = (data$linewidth %||% 0.5) * 
+        .pt, lty = data$linetype %||% 1, lineend = params$lineend %||% 
+        "butt", linejoin = params$linejoin %||% "mitre")
+    if (isTRUE(params$flipped_aes)) {
+        grobTree(rectGrob(height = 0.75, width = 0.5), linesGrob(0.5, 
+            c(0.125, 0.875)), gp = gp)
+    }
+    else {
+        grobTree(rectGrob(height = 0.5, width = 0.75), gp = gp)
+    }
+}
+
 #' Plot a quantile plot
 #'
 #'  Quantile plots are an alternative to box plots / histograms / violinplots as in that they visualize the distribution of data points.
@@ -71,7 +86,9 @@ geom_quantileplot <- function(mapping = NULL, data = NULL,
       }
   }
   
-  
+  if(!quantilesP[1] == 0.5) {
+    cli::cli_abort('The first entry in the supplied quantiles needs to be 0.5')
+  }
 
   layer(
     data = data,
@@ -239,11 +256,13 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
 
     data <- data[dim(data)[1]:1, ]
     if ("fill" %in% colnames(data)) {
-        data$fill <- map_chr(rev_scale(1:length(data$fill)), \(n) {
+        # The lsat row of data$fill corresponds to the median, which is represnted not by fill but by a median line anywy
+        # Hence we can decrease the number of lightening steps here
+        data$fill[1:(length(data$fill) - 1)] <- map_chr(rev_scale(1:(length(data$fill) - 1)), \(n) {
             return(colorspace::lighten(data$fill[1], amount = n, method = "relative"))
         })
     }    
-
+    #browser()
 
 
     if (nrow(data) <= 1) {
@@ -288,7 +307,7 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
     ))
   },
 
-  draw_key = draw_key_crossbar,
+  draw_key = draw_key_quantileplot2,
 
   default_aes = aes(weight = 1, colour = "grey20", fill = "white", size = NULL,
     alpha = NA, shape = 19, linetype = "solid", linewidth = 0.5),

@@ -52,13 +52,6 @@ ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len)) +
     NULL
 ```
 
-    ## Warning: `data_frame()` was deprecated in tibble 1.1.0.
-    ## ℹ Please use `tibble()` instead.
-    ## ℹ The deprecated feature was likely used in the ggquantileplot package.
-    ##   Please report the issue to the authors.
-    ## This warning is displayed once every 8 hours.
-    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated.
-
     ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
     ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
 

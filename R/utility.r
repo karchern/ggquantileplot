@@ -3,8 +3,13 @@
 # This file loads dependencies and non-exposed functions (mainly from ggplot2) that I found were required to get this to work
 # Some resources state that loading entire packages is discourared, but many others do it. I'm trying to keep the environemnt as clean as I can.
 #' @import ggplot2 purrr
+#' @import grid
+#' @import patchwork
 #' @importFrom rlang list2
 #' @importFrom vctrs vec_unique_count
+#' @importFrom stringr str_c
+#' @importFrom stringr str_detect
+#' @importFrom dplyr tibble
 
 rev_scale <- function(x) {
     return((max(x) - x) / (max(x) - min(x)))
@@ -84,7 +89,7 @@ check_linewidth <- function(data, name) {
 
 is_mapped_discrete <- function (x) inherits(x, "mapped_discrete")
 
-data_frame0 <- function(...) data_frame(..., .name_repair = "minimal")
+data_frame0 <- function(...) tibble(..., .name_repair = "minimal")
 
 #' @export
 convert_to_quantile_plot_factors <- function(data, factorName, numExtensions = NULL) {
@@ -141,7 +146,7 @@ add_quantileplot_legend <- function(basePlot, data, baseColors, quantilesP) {
     origPlot <- basePlot
     basePlot <- basePlot + theme(legend.position = "none")
     # Modify legend
-    fillVar <- rlang::as_name(pQuantileplot$layers[[1]]$mapping$fill)
+    fillVar <- rlang::as_name(basePlot$layers[[1]]$mapping$fill)
     origPlot <- origPlot +
         scale_fill_quantile(baseColors = unname(baseColors), quantilesPLevels = levels(data[[fillVar]]), quantilesP = quantilesP) +
         theme(

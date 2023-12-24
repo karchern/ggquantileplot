@@ -295,15 +295,17 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
     box <- flip_data(box, flipped_aes)
 
     ggname("geom_quantileplot", grobTree(
-        GeomCrossbar$draw_panel(
-            box,
-            fatten = 2,
-            panel_params,
-            coord,
-            lineend = lineend,
-            linejoin = linejoin,
-            flipped_aes = flipped_aes
-        )
+        # GeomCrossbar$draw_panel expects box to be a 1-row dataframe, but in our case it's not. The function throws a warning because of that.
+        # This is very hacky. Could be easily fixed by creating a new Geom but I'll leave htat for later
+        suppressWarnings(GeomCrossbar$draw_panel(
+          box,
+          fatten = 2,
+          panel_params,
+          coord,
+          lineend = lineend,
+          linejoin = linejoin,
+          flipped_aes = flipped_aes
+        ))
     ))
   },
 

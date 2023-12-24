@@ -16,13 +16,13 @@ The package can be can be installed via
 
 In it’s most basic form, you can simply exchange the call for
 `geom_boxplot` with a call for `geom_quantileplot` You need to supply
-the `fill` aesthetic to geom_quantileplot since the color is what
-carries the information about the distribution.
+the `fill` aesthetic to `geom_quantileplot` since the color is what
+carries the information about the distribution in quantile plots.
 
 ``` r
 library(ggquantileplot)
 library(ggplot2)
-baseColors <- c("OJ" = "darkred", "VC" = "darkblue")
+baseColors <- c("OJ" = "#c45e5e", "VC" = "#2635a6")
 ```
 
 ``` r
@@ -42,6 +42,9 @@ In the case of the plot below, the darkest hue corresponds to the 40% to
 60% quantile of the distribution, while the darkest and second-darkest
 hue together corresponds to the 30%-70% quantile.
 
+As you can see, by default this implementation of quantile plots has
+non-informative legends which we’ll fix below.
+
 ``` r
 quantilesP <- c(0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
 ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len)) +
@@ -52,38 +55,18 @@ ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len)) +
     NULL
 ```
 
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
 ![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
-
-As you can see, by default this implementation of quantile plots has
-non-informative legends.
 
 In order to produce informative legends, one needs to use the
 `convert_to_quantile_plot_factors` function to add dummy levels to the
 factor mapped to the `fill` aesthetic (in this dummy example the `supp`
-column).
+column). This needs to happen because I couldn’t find a way to plot more
+than one legend key per grouping level in ggplot2.
+
+Please not that this needs to happen before you create the base plot
+object.
 
 ``` r
-# 2 Things to keep in mind
-## This adds dummy levels to the supp factor.
-## This needs to happen before the base ggplot object is generated
 ToothGrowth <- convert_to_quantile_plot_factors(ToothGrowth, 'supp', numExtensions = length(quantilesP) - 1)
 ```
 
@@ -95,6 +78,7 @@ quantilePlot <- ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len)) +
     geom_quantileplot(aes(fill = supp), quantilesP = quantilesP) +
     scale_fill_manual(values = baseColors) +
     theme_classic() +
+    guides(fill = guide_legend(ncol = 2)) +
     NULL
 quantilePlot <- add_quantileplot_legend(quantilePlot, ToothGrowth, baseColors = baseColors, quantilesP = quantilesP)
 ```
@@ -102,44 +86,8 @@ quantilePlot <- add_quantileplot_legend(quantilePlot, ToothGrowth, baseColors = 
     ## Scale for fill is already present.
     ## Adding another scale for fill, which will replace the existing scale.
 
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
 ``` r
 quantilePlot
 ```
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
-
-    ## Warning in !is.null(data$ynotchlower) && !is.null(data$ynotchupper) &&
-    ## !is.na(data$ynotchlower): 'length(x) = 6 > 1' in coercion to 'logical(1)'
 
 ![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->

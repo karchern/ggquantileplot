@@ -45,7 +45,12 @@ quantilePlot <- ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len)) +
     theme_classic() +
     guides(fill = guide_legend(ncol = 2)) +
     NULL
+quantilePlot
 ```
+
+    ## Warning: Attention: Adding dummy levels to column fill
+
+![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
 In quantile plots, darker hues represent the more central part of the
 distribution and lighter hues represent the ‘edges’ of the distribution.

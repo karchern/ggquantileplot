@@ -40,6 +40,7 @@ quantilePlot <- ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len)) +
     theme_classic() +
     guides(fill = guide_legend(ncol = 2)) +
     NULL
+quantilePlot
 ```
 
 In quantile plots, darker hues represent the more central part of the

@@ -96,7 +96,6 @@ convert_to_quantile_plot_factors <- function(data, factorName = "fill", quantile
     cli::cli_abort(str_c("Fill vector needs to be a factor."))
   }
   newLevels <- c()
-  cli::cli_warn(str_c("Attention: Adding dummy levels to column ", factorName))
   for (origLevel in levels(data[[factorName]])) {
     newLevels <- c(newLevels, c(origLevel, str_c(origLevel, " ", str_c(1 - quantilesP[2:length(quantilesP)], quantilesP[2:length(quantilesP)], sep = ":"))))
   }

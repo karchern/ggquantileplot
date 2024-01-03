@@ -4,7 +4,6 @@
 # Some resources state that loading entire packages is discourared, but many others do it. I'm trying to keep the environemnt as clean as I can.
 #' @import ggplot2 purrr
 #' @import grid
-#' @import patchwork
 #' @importFrom rlang list2
 #' @importFrom vctrs vec_unique_count
 #' @importFrom stringr str_c
@@ -92,68 +91,38 @@ is_mapped_discrete <- function (x) inherits(x, "mapped_discrete")
 data_frame0 <- function(...) tibble(..., .name_repair = "minimal")
 
 #' @export
-convert_to_quantile_plot_factors <- function(data, factorName, numExtensions = NULL) {
-    if (!is.factor(data[[factorName]])) {
-      cli::cli_warn(str_c("Transforming vector", factorName, " into factor"))
-    }
-    newLevels <- c()
-    cli::cli_warn(str_c("Attention: Adding dummy levels to column ", factorName))
-    for (origLevel in levels(data[[factorName]])) {
-      newLevels <- c(newLevels, c(origLevel, str_c(origLevel, 1:numExtensions, sep = "___")))
-    }
-    data[[factorName]] <- factor(data[[factorName]], levels = newLevels)
-    return(data)
-}
-
-quantile_palette  <- function(baseColors, quantilesP) {
-    # discrete_scale needs a function that takes a single integer as an argument and returns the color values we need
-    # This function fulfills this criterion, albeit in an idiotic fashion: The integer is never actually used.
-    # But I think for our purposes this is fine. I wish I could solve this in a better fashion!
-    function(n) {
-        return(unlist(map(baseColors, \(x) {
-            rev(map(rev_scale(quantilesP[2:length(quantilesP)]), \(y) {
-                colorspace::lighten(x, amount = y, method = "relative")
-            }))
-        })))
-    }
+convert_to_quantile_plot_factors <- function(data, factorName = "fill", quantilesP) {
+  if (!is.factor(data[[factorName]])) {
+    cli::cli_abort(str_c("Fill vector needs to be a factor."))
+  }
+  newLevels <- c()
+  cli::cli_warn(str_c("Attention: Adding dummy levels to column ", factorName))
+  for (origLevel in levels(data[[factorName]])) {
+    newLevels <- c(newLevels, c(origLevel, str_c(origLevel, " ", str_c(1 - quantilesP[2:length(quantilesP)], quantilesP[2:length(quantilesP)], sep = ":"))))
+  }
+  data[[factorName]] <- factor(data[[factorName]], levels = newLevels)
+  return(data)
 }
 
 #' @export
-scale_fill_quantile <- function(
-    baseColors = NULL,
-    quantilesPLevels = NULL,
-    quantilesP = NULL,
-    ...) {
-    quantilesPLevelsBase <- quantilesPLevels
-    quantilesPLevelsBase <- quantilesPLevelsBase[!str_detect(quantilesPLevelsBase, "___")]
-    labels <- quantilesPLevels[1:(length(quantilesPLevels)-length(baseColors))]
-    quantilesStr <- str_c(str_c((1 - quantilesP[2:length(quantilesP)]) * 100, "", sep = ""), str_c(quantilesP[2:length(quantilesP)] * 100, "%", sep = ""), sep = "-")
-    quantilesStr <- unlist(map(quantilesPLevelsBase, \(x) str_c(x, quantilesStr, sep = ": ")))
-    #browser()
-    discrete_scale(
-        aesthetics = "fill",
-        scale_name = "scale_fill_quantile",
-        palette = quantile_palette(baseColors, quantilesP),
-        breaks = labels,
-        labels = quantilesStr,
-        drop = FALSE
-    )
+quantile_palette <- function(baseColors, quantilesP) {
+  # discrete_scale needs a function that takes a single integer as an argument and returns the color values we need
+  # This function fulfills this criterion, albeit in an idiotic fashion: The integer is never actually used.
+  # But I think for our purposes this is fine. I wish I could solve this in a better fashion!
+  function(n) {
+    # The unname here is crucial
+    return(unname(unlist(map(baseColors, \(x) {
+      rev(map(rev_scale(quantilesP[2:length(quantilesP)]), \(y) {
+        colorspace::lighten(x, amount = y, method = "relative")
+      }))
+    }))))
+  }
 }
 
 #' @export
-add_quantileplot_legend <- function(basePlot, data, baseColors, quantilesP) {
-    # remove original legend from basePlor
-    origPlot <- basePlot
-    basePlot <- basePlot + theme(legend.position = "none")
-    # Modify legend
-    fillVar <- rlang::as_name(basePlot$layers[[1]]$mapping$fill)
-    origPlot <- origPlot +
-        scale_fill_quantile(baseColors = unname(baseColors), quantilesPLevels = levels(data[[fillVar]]), quantilesP = quantilesP) +
-        theme(
-            legend.key.size = unit(1, "lines")
-        )
-    # Extract and paste together with patchwork
-    legendPlot <- cowplot::get_legend(origPlot)
-    return((basePlot) + legendPlot + plot_layout(widths = c(2, 1)))
+# scale_fill_quantile <- function(baseColors, quantilesP) {
+#   return(scale_fill_manual(values = quantile_palette(baseColors, quantilesP)()))
+# }
+scale_fill_quantile <- function(baseColors, quantilesP) {
+    return(scale_fill_manual(values = quantile_palette(baseColors, quantilesP)()[1:10]))
 }
-

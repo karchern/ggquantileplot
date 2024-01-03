@@ -1,41 +1,5 @@
 draw_key_quantileplot <- function (data, params, size) 
 {
-    print(data)
-    print(params)
-    print(size)
-    #asdadsasd
-    # TEMPORARY
-    data$alpha <- 0.3
-    gp <- gpar(col = data$colour %||% "grey20", fill = alpha(data$fill %||% 
-        "white", data$alpha), lwd = (data$linewidth %||% 0.5) * 
-        .pt, lty = data$linetype %||% 1, lineend = params$lineend %||% 
-        "butt", linejoin = params$linejoin %||% "mitre")
-    if (isTRUE(params$flipped_aes)) {
-        grobTree(linesGrob(c(0.1, 0.25), 0.5), linesGrob(c(0.75, 
-            0.9), 0.5), rectGrob(width = 0.5, height = 0.75), 
-            linesGrob(0.5, c(0.125, 0.875)), gp = gp)
-    }
-    else {
-
-    topY <- 3
-    bottomY <- -3
-    yRange <- abs(topY - bottomY)
-    totalLegendElements <- params$numGroups * params$quantilesP
-
-    
-
-    do.call('grobTree',             list(
-            rectGrob(height = 0.5, width = 0.75, x = 0, y = 1.5),
-            rectGrob(height = 0.5, width = 0.75, x = 0, y = 1),
-            rectGrob(height = 0.5, width = 0.75, x = 0, y = 0.5),
-            rectGrob(height = 0.5, width = 0.75, x = 0, y = 0),
-            "gp" = gp
-        ))        
-    }
-}
-
-draw_key_quantileplot2 <- function (data, params, size) 
-{
     gp <- gpar(col = data$colour %||% "grey20", fill = alpha(data$fill %||% 
         "white", data$alpha), lwd = (data$linewidth %||% 0.5) * 
         .pt, lty = data$linetype %||% 1, lineend = params$lineend %||% 
@@ -67,7 +31,7 @@ geom_quantileplot <- function(mapping = NULL, data = NULL,
                          outlier.size = 1.5,
                          outlier.stroke = 0.5,
                          outlier.alpha = NULL,
-                         quantilesP = c(0.5, 0.6, 0.7, 0.8, 0.9, 1),
+                         quantilesP = NULL,
                          notch = FALSE,
                          notchwidth = 0.5,
                          varwidth = FALSE,
@@ -84,10 +48,6 @@ geom_quantileplot <- function(mapping = NULL, data = NULL,
           cli::cli_warn("Can't preserve total widths when {.code varwidth = TRUE}.")
           position$preserve <- "single"
       }
-  }
-  
-  if(!quantilesP[1] == 0.5) {
-    cli::cli_abort('The first entry in the supplied quantiles needs to be 0.5')
   }
 
   layer(
@@ -118,7 +78,7 @@ geom_quantileplot <- function(mapping = NULL, data = NULL,
 
 #' @export
 StatQuantileplot <- ggproto("StatBoxplot", Stat,
-  required_aes = c("y|x"),
+  required_aes = c("y|x", "fill"),
   non_missing_aes = "weight",
   # either the x or y aesthetic will get dropped during
   # statistical transformation, depending on the orientation
@@ -132,10 +92,14 @@ StatQuantileplot <- ggproto("StatBoxplot", Stat,
       vars = "x",
       name = "stat_boxplot"
     )
+    data <- convert_to_quantile_plot_factors(data, "fill", quantilesP = params$quantilesP)
     flip_data(data, params$flipped_aes)
   },
 
   setup_params = function(self, data, params) {
+    # data <- convert_to_quantile_plot_factors(data, "supp", numExtensions = length(params$quantilesP) - 1)
+    # Let default fill take over.
+
     params$flipped_aes <- has_flipped_aes(data, params, main_is_orthogonal = TRUE,
                                           group_has_equal = TRUE,
                                           main_is_optional = TRUE)
@@ -156,15 +120,25 @@ StatQuantileplot <- ggproto("StatBoxplot", Stat,
       ))
     }
 
+    if (is.null(params$quantilesP)) {
+      cli::cli_abort(c(
+        "quantilesP not supplied. Please supply a vector of quantiles. First entry needs to be 0.5."
+      ))
+    }
+
+    if(!quantilesP[1] == 0.5) {
+      cli::cli_abort('The first entry in the supplied quantiles needs to be 0.5')
+    }
+
     params
   },
 
   extra_params = c("na.rm", "orientation", 'quantilesP'),
 
-  compute_group = function(data, scales, width = NULL, na.rm = FALSE, coef = 1.5, flipped_aes = FALSE, quantilesP = quantilesP) {
+  compute_group = function(data, scales, width = NULL, na.rm = FALSE, coef = 1.5, flipped_aes = FALSE) {
     data <- flip_data(data, flipped_aes)
     #qs <- c(0.5, 0.6, 0.7, 0.8, 0.9, 1)
-    qs <- quantilesP
+    qs <- quantilesP[2:length(quantilesP)]
 
     r <- map(qs, \(x) {
         qqLow <- as.numeric(stats::quantile(data$y, 1 - x))
@@ -175,7 +149,7 @@ StatQuantileplot <- ggproto("StatBoxplot", Stat,
 
     r <- do.call(rbind.data.frame, r)
     colnames(r) <- c("lower", "upper", 'middle')
-    r$quantileGroup <- str_c(qs, 1 - qs, sep = ":")
+    r$quantileGroup <- str_c(1 - qs, qs, sep = ":")
     
     if (vec_unique_count(data$x) > 1)
       width <- diff(range(data$x)) * 0.9
@@ -230,14 +204,13 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
       data$ymin_final  <- pmin(out_min, data$ymin)
       data$ymax_final  <- pmax(out_max, data$ymax)
     }
-    
+    data$fill <- factor(str_c(data$fill, " ", data$quantileGroup, sep = ""), levels = levels(data$fill)[str_detect(levels(data$fill), ":")])
     # if `varwidth` not requested or not available, don't use it
     data$xmin <- data$x - data$width / 2
     data$xmax <- data$x + data$width / 2
     data$width <- NULL
     if (!is.null(data$relvarwidth)) data$relvarwidth <- NULL
     flip_data(data, params$flipped_aes)
-    
   },
 
   draw_group = function(self, data, panel_params, coord, lineend = "butt",
@@ -253,17 +226,7 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
     data$xmax <- max(data$xmax)
     data <- check_linewidth(data, snake_class(self))
     data <- flip_data(data, flipped_aes)
-
     data <- data[dim(data)[1]:1, ]
-    if ("fill" %in% colnames(data)) {
-        # The lsat row of data$fill corresponds to the median, which is represnted not by fill but by a median line anywy
-        # Hence we can decrease the number of lightening steps here
-        data$fill[1:(length(data$fill) - 1)] <- map_chr(rev_scale(1:(length(data$fill) - 1)), \(n) {
-            return(colorspace::lighten(data$fill[1], amount = n, method = "relative"))
-        })
-    }    
-    #browser()
-
 
     if (nrow(data) <= 1) {
         cli::cli_abort(c(
@@ -308,8 +271,7 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
         ))
     ))
   },
-
-  draw_key = draw_key_quantileplot2,
+  draw_key = draw_key_quantileplot,
 
   default_aes = aes(weight = 1, colour = "grey20", fill = "white", size = NULL,
     alpha = NA, shape = 19, linetype = "solid", linewidth = 0.5),

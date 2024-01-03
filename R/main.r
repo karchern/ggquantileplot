@@ -1,3 +1,59 @@
+GeomQuantile <- ggproto("GeomCrossbar", Geom,
+  setup_params = function(data, params) {
+    GeomErrorbar$setup_params(data, params)
+  },
+
+  extra_params = c("na.rm", "orientation"),
+
+  setup_data = function(data, params) {
+    GeomErrorbar$setup_data(data, params)
+  },
+
+  default_aes = aes(colour = "black", fill = NA, linewidth = 0.5, linetype = 1,
+    alpha = NA),
+
+  required_aes = c("x", "y", "ymin|xmin", "ymax|xmax"),
+
+  draw_key = draw_key_crossbar,
+
+  draw_panel = function(self, data, panel_params, coord, lineend = "butt",
+                        linejoin = "mitre", fatten = 2.5, width = NULL,
+                        flipped_aes = FALSE) {
+
+    
+    data <- check_linewidth(data, snake_class(self))
+    data <- flip_data(data, flipped_aes)
+
+    
+    middle <- transform(data, x = xmin, xend = xmax, yend = y, linewidth = linewidth * fatten, alpha = NA)
+
+     
+    # No notch
+    box <- data_frame0(
+      x = c(data$xmin, data$xmin, data$xmax, data$xmax, data$xmin),
+      y = c(data$ymax, data$ymin, data$ymin, data$ymax, data$ymax),
+      alpha = rep(data$alpha, 5),
+      colour = rep(data$colour, 5),
+      linewidth = rep(data$linewidth, 5),
+      linetype = rep(data$linetype, 5),
+      fill = rep(data$fill, 5),
+      group = rep(seq_len(nrow(data)), 5) # each bar forms it's own group
+    )
+    
+    box <- flip_data(box, flipped_aes)
+    middle <- flip_data(middle, flipped_aes)
+
+    #browser()
+    ggname("geom_crossbar", gTree(children = gList(
+      GeomPolygon$draw_panel(box, panel_params, coord, lineend = lineend, linejoin = linejoin),
+      GeomSegment$draw_panel(middle, panel_params, coord, lineend = lineend, linejoin = linejoin)
+    )))
+    #browser()
+  },
+
+  rename_size = TRUE
+)
+
 draw_key_quantileplot <- function (data, params, size) 
 {
     gp <- gpar(col = data$colour %||% "grey20", fill = alpha(data$fill %||% 
@@ -257,10 +313,11 @@ GeomQuantileplot <- ggproto("GeomQuantileplot", Geom,
     )
     box <- flip_data(box, flipped_aes)
 
+    #browser()
     ggname("geom_quantileplot", grobTree(
         # GeomCrossbar$draw_panel expects box to be a 1-row dataframe, but in our case it's not. The function throws a warning because of that.
-        # This is very hacky. Could be easily fixed by creating a new Geom but I'll leave htat for later
-        suppressWarnings(GeomCrossbar$draw_panel(
+        # This is very hacky...
+        suppressWarnings(GeomQuantile$draw_panel(
           box,
           fatten = 2,
           panel_params,

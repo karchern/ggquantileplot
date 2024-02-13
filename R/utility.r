@@ -1,5 +1,3 @@
-
-
 # This file loads dependencies and non-exposed functions (mainly from ggplot2) that I found were required to get this to work
 # Some resources state that loading entire packages is discourared, but many others do it. I'm trying to keep the environemnt as clean as I can.
 #' @import ggplot2 purrr
@@ -11,13 +9,16 @@
 #' @importFrom dplyr tibble
 
 rev_scale <- function(x) {
-    return((max(x) - x) / (max(x) - min(x)))
+  return((max(x) - x) / (max(x) - min(x)))
 }
 
 show_stack <- function() {
   cat("#----- Stack containing call to show_stack -----#\n\n")
   x <- sys.calls()
-  lapply(head(x, -1), function(x) {print(x); cat("\n")})
+  lapply(head(x, -1), function(x) {
+    print(x)
+    cat("\n")
+  })
   cat("#-----------------------------------------------#\n\n")
 }
 
@@ -36,7 +37,9 @@ NO_GROUP <- -1L
 # character) vectors, excluding `label`. The special value `NO_GROUP`
 # is used for all observations if no discrete variables exist.
 add_group <- function(data) {
-  if (empty(data)) return(data)
+  if (empty(data)) {
+    return(data)
+  }
 
   if (is.null(data[["group"]])) {
     disc <- vapply(data, is.discrete, logical(1))
@@ -75,7 +78,7 @@ snakeize <- function(x) {
 }
 
 snake_class <- function(x) {
-    snakeize(class(x)[1])
+  snakeize(class(x)[1])
 }
 
 check_linewidth <- function(data, name) {
@@ -86,7 +89,7 @@ check_linewidth <- function(data, name) {
   data
 }
 
-is_mapped_discrete <- function (x) inherits(x, "mapped_discrete")
+is_mapped_discrete <- function(x) inherits(x, "mapped_discrete")
 
 data_frame0 <- function(...) tibble(..., .name_repair = "minimal")
 
@@ -123,5 +126,5 @@ quantile_palette <- function(baseColors, quantilesP) {
 #   return(scale_fill_manual(values = quantile_palette(baseColors, quantilesP)()))
 # }
 scale_fill_quantile <- function(baseColors, quantilesP) {
-    return(scale_fill_manual(values = quantile_palette(baseColors, quantilesP)()[1:10]))
+  return(scale_fill_manual(values = quantile_palette(baseColors, quantilesP)()[1:(length(baseColors) * length(quantilesP))]))
 }

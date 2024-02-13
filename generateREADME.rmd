@@ -43,6 +43,24 @@ quantilePlot <- ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len)) +
 quantilePlot
 ```
 
+It also works with more than 2 groups
+
+```{r}
+set.seed(3)
+quantilesP <- c(0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
+baseColors <- c("OJ" = "#c45e5e", "VC" = "#2635a6", "BBC" = "orange")
+ToothGrowth$supp <- as.factor(ifelse(runif(nrow(ToothGrowth)) > 0.3, "BBC", as.vector(ToothGrowth$supp)))
+quantilePlot <- ggplot(data = ToothGrowth, aes(x = as.factor(dose), y = len)) +
+    # First entry of quantilesP needs to be 0.5
+    geom_quantileplot(aes(fill = supp), quantilesP = quantilesP) +
+    # scale_fill_quantile is crucial here, otherwise color scale is all over the place!
+    scale_fill_quantile(baseColors, quantilesP) +
+    theme_classic() +
+    guides(fill = guide_legend(ncol = length(baseColors))) +
+    NULL
+quantilePlot
+```
+
 In quantile plots, darker hues represent the more central part of the
 distribution and lighter hues represent the ‘edges’ of the distribution.
 

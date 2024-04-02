@@ -113,8 +113,8 @@ quantile_palette <- function(baseColors, quantilesP) {
   # But I think for our purposes this is fine. I wish I could solve this in a better fashion!
   function(n) {
     # The unname here is crucial
-    return(unname(unlist(map(baseColors, \(x) {
-      rev(map(rev_scale(quantilesP[2:length(quantilesP)]), \(y) {
+    return(unname(unlist(map(baseColors, function(x) {
+      rev(map(rev_scale(quantilesP[2:length(quantilesP)]), function(y) {
         colorspace::lighten(x, amount = y, method = "relative")
       }))
     }))))

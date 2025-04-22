@@ -174,15 +174,16 @@ StatQuantileplot <- ggproto("StatBoxplot", Stat,
         "quantilesP not supplied. Please supply a vector of quantiles. First entry needs to be 0.5."
       ))
     }
-
-    if (!quantilesP[1] == 0.5) {
+    print("aa")
+    if (!params$quantilesP[1] == 0.5) {
       cli::cli_abort("The first entry in the supplied quantiles needs to be 0.5")
     }
+    print("b")
 
     params
   },
   extra_params = c("na.rm", "orientation", "quantilesP"),
-  compute_group = function(data, scales, width = NULL, na.rm = FALSE, coef = 1.5, flipped_aes = FALSE) {
+  compute_group = function(data, scales, width = NULL, na.rm = FALSE, coef = 1.5, flipped_aes = FALSE, quantilesP = NULL) {
     data <- flip_data(data, flipped_aes)
     # qs <- c(0.5, 0.6, 0.7, 0.8, 0.9, 1)
     qs <- quantilesP[2:length(quantilesP)]
